@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  prefect-server:
+    build: .
+    ports:
+      - "4200:4200"
+    env_file:
+      - .env

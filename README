@@ -1,0 +1,13 @@
+### Prefect Auth Server
+
+A simple wrapper for Prefect server with API key and basic auth check.
+
+#### Setup
+
+1. Clone the repository
+2. Copy `.env.example` to `.env` and fill in your credentials
+3. Build and run with Docker:
+
+```bash
+docker-compose up --build
+```
