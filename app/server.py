@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from fastapi import Response
 from starlette.requests import HTTPConnection
@@ -63,10 +64,30 @@ def handler_error(conn: HTTPConnection, exc: Exception) -> Response:
 
 
 def create_auth_app():
+    logger.info("Starting app creation...")
+    start_time = time.time()
+
     app = create_app()
+    logger.info(f"Base app created in {time.time() - start_time:.2f} seconds")
+
+    middleware_start = time.time()
     app.add_middleware(
         AuthenticationMiddleware,
         backend=CustomAuth(),
         on_error=handler_error,
     )
+    logger.info(
+        f"Auth middleware added in {time.time() - middleware_start:.2f} seconds"
+    )
+
+    @app.on_event("startup")
+    async def startup_event():
+        logger.info("Starting server initialization...")
+        startup_start = time.time()
+        # This will help identify if any Prefect-specific initialization is slow
+        logger.info(
+            f"Server initialization complete in {time.time() - startup_start:.2f} seconds"
+        )
+        logger.info(f"Total startup time: {time.time() - start_time:.2f} seconds")
+
     return app
