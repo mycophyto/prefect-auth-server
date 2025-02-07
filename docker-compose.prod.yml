@@ -13,7 +13,7 @@ services:
     ports:
       - "4200:4200"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:4200/api/health" ]
+      test: [ "CMD", "curl", "-v", "-f", "http://localhost:4200/api/health" ]
       interval: 10s
       timeout: 10s
       retries: 5
