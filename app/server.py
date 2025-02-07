@@ -34,24 +34,35 @@ basic_auth = "Basic " + os.environ["PREFECT_BASIC_AUTH"]
 
 class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
+        logger.debug(f"Received request path: {conn.url.path}")
+
         if conn.url.path == "/api/health":
+            logger.debug("Health check endpoint - skipping auth")
             return None
 
         if "Authorization" not in conn.headers:
+            logger.debug("No Authorization header found")
             raise AuthenticationError("no token")
 
         auth = conn.headers["Authorization"]
+        logger.debug(f"Received Authorization header: {auth}")
 
         # For API routes, only accept API key authentication
         if conn.url.path.startswith("/api/"):
+            logger.debug("API route detected - checking API key")
             if auth == apikey:
+                logger.debug("API key authentication successful")
                 return AuthCredentials(["auth"]), SimpleUser("api")
+            logger.debug("API key authentication failed")
             raise AuthenticationError("invalid token - API routes require API key")
 
         # For non-API routes, only accept basic auth
+        logger.debug("Non-API route detected - checking basic auth")
         if auth == basic_auth:
+            logger.debug("Basic auth authentication successful")
             return AuthCredentials(["auth"]), SimpleUser("user")
 
+        logger.debug("Basic auth authentication failed")
         raise AuthenticationError("invalid token - non-API routes require basic auth")
 
 
