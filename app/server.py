@@ -34,10 +34,10 @@ basic_auth = "Basic " + os.environ["PREFECT_BASIC_AUTH"]
 
 class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
-        logger.debug(f"Received request path: {conn.url.path}")
-
+        logger.info(f"Health Check - Received request path: {conn.url.path}")
+        
         if conn.url.path == "/api/health":
-            logger.debug("Health check endpoint - skipping auth")
+            logger.info("Health check endpoint accessed")
             return None
 
         if "Authorization" not in conn.headers:
@@ -79,6 +79,12 @@ def create_auth_app():
     start_time = time.time()
 
     app = create_app()
+    
+    @app.get("/api/health")
+    async def health_check():
+        logger.info("Health check endpoint called")
+        return {"status": "healthy"}
+    
     logger.info(f"Base app created in {time.time() - start_time:.2f} seconds")
 
     middleware_start = time.time()
