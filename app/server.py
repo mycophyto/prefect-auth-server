@@ -35,7 +35,7 @@ basic_auth = "Basic " + os.environ["PREFECT_BASIC_AUTH"]
 class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
         logger.info(f"Health Check - Received request path: {conn.url.path}")
-        
+
         if conn.url.path == "/api/health":
             logger.info("Health check endpoint accessed")
             return None
@@ -47,14 +47,19 @@ class CustomAuth(AuthenticationBackend):
         auth = conn.headers["Authorization"]
         logger.debug(f"Received Authorization header: {auth}")
 
-        # For API routes, only accept API key authentication
+        # For API routes, accept both API key and Basic auth
         if conn.url.path.startswith("/api/"):
-            logger.debug("API route detected - checking API key")
+            logger.debug("API route detected - checking authentication")
             if auth == apikey:
                 logger.debug("API key authentication successful")
                 return AuthCredentials(["auth"]), SimpleUser("api")
-            logger.debug("API key authentication failed")
-            raise AuthenticationError("invalid token - API routes require API key")
+            elif auth == basic_auth:
+                logger.debug("Basic auth authentication successful for API route")
+                return AuthCredentials(["auth"]), SimpleUser("user")
+            logger.debug("Authentication failed for API route")
+            raise AuthenticationError(
+                "invalid token - API routes require valid API key or basic auth"
+            )
 
         # For non-API routes, only accept basic auth
         logger.debug("Non-API route detected - checking basic auth")
@@ -79,12 +84,12 @@ def create_auth_app():
     start_time = time.time()
 
     app = create_app()
-    
+
     @app.get("/api/health")
     async def health_check():
         logger.info("Health check endpoint called")
         return {"status": "healthy"}
-    
+
     logger.info(f"Base app created in {time.time() - start_time:.2f} seconds")
 
     middleware_start = time.time()
