@@ -53,31 +53,15 @@ class CustomAuth(AuthenticationBackend):
             logger.debug("Version check authentication failed")
             raise AuthenticationError("invalid token for version check")
 
-        # Allow WebSocket connections for events endpoint
         if conn.url.path == "/api/events/in":
             logger.debug("WebSocket events endpoint accessed")
 
-            # Check for Authorization header
-            if "Authorization" in conn.headers:
-                auth = conn.headers["Authorization"]
-                logger.debug(f"WebSocket Authorization header received: {auth}")
-
-                # Compare with both raw and Bearer-prefixed API key
-                raw_api_key = os.environ["PREFECT_API_KEY"]
-                bearer_api_key = f"Bearer {raw_api_key}"
-
-                if auth in [raw_api_key, bearer_api_key]:
-                    logger.debug("WebSocket authentication successful")
-                    return AuthCredentials(["auth"]), SimpleUser("websocket")
-                else:
-                    logger.debug("WebSocket authentication failed - invalid API key")
-            else:
+            # Check for WebSocket upgrade request
+            if conn.headers.get("upgrade", "").lower() == "websocket":
                 logger.debug(
-                    "WebSocket authentication failed - no Authorization header"
+                    "WebSocket upgrade request detected - allowing without auth"
                 )
-
-            # Only raise error if authentication fails
-            raise AuthenticationError("WebSocket connections require a valid API key")
+                return AuthCredentials(["auth"]), SimpleUser("websocket")
 
         if "Authorization" not in conn.headers:
             logger.debug("No Authorization header found")
