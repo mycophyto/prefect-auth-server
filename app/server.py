@@ -53,18 +53,18 @@ class CustomAuth(AuthenticationBackend):
 
             if "Authorization" in conn.headers:
                 auth = conn.headers["Authorization"]
-                logger.debug(f"WebSocket Authorization header: {auth}")
+                logger.debug(f"WebSocket Authorization header received: {auth}")
 
-                # Strip potential 'Bearer ' prefix from API key for comparison
-                if (
-                    auth.replace("Bearer ", "") == os.environ["PREFECT_API_KEY"]
-                    or auth == basic_auth
-                ):
+                # Compare with both raw and Bearer-prefixed API key
+                raw_api_key = os.environ["PREFECT_API_KEY"]
+                bearer_api_key = f"Bearer {raw_api_key}"
+
+                if auth in [raw_api_key, bearer_api_key, basic_auth]:
                     logger.debug("WebSocket authentication successful")
                     return AuthCredentials(["auth"]), SimpleUser("websocket")
                 else:
                     logger.debug(
-                        "WebSocket authentication failed - invalid credentials"
+                        f"WebSocket authentication failed - invalid credentials. Expected one of: Bearer {raw_api_key}, {raw_api_key}, or Basic auth"
                     )
             else:
                 logger.debug(
