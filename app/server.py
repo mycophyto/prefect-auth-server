@@ -57,10 +57,7 @@ class CustomAuth(AuthenticationBackend):
         if conn.url.path == "/api/events/in":
             logger.debug("WebSocket events endpoint accessed")
 
-            # Check for WebSocket upgrade request
-            if conn.headers.get("upgrade", "").lower() == "websocket":
-                logger.debug("WebSocket upgrade request detected")
-
+            # Check for Authorization header
             if "Authorization" in conn.headers:
                 auth = conn.headers["Authorization"]
                 logger.debug(f"WebSocket Authorization header received: {auth}")
@@ -74,12 +71,14 @@ class CustomAuth(AuthenticationBackend):
                     return AuthCredentials(["auth"]), SimpleUser("websocket")
                 else:
                     logger.debug(
-                        f"WebSocket authentication failed - invalid credentials. Expected one of: Bearer {raw_api_key}, {raw_api_key}, or Basic auth"
+                        "WebSocket authentication failed - invalid credentials"
                     )
             else:
                 logger.debug(
                     "WebSocket authentication failed - no Authorization header"
                 )
+
+            # Only raise error if authentication fails
             raise AuthenticationError("invalid token for WebSocket connection")
 
         if "Authorization" not in conn.headers:
