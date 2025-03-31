@@ -34,11 +34,22 @@ basic_auth = "Basic " + os.environ["PREFECT_BASIC_AUTH"]
 
 class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
-        logger.info(f"Health Check - Received request path: {conn.url.path}")
+        logger.info(f"Request path: {conn.url.path}")
 
+        # Allow health check endpoint without authentication
         if conn.url.path == "/api/health":
             logger.info("Health check endpoint accessed")
             return None
+
+        # Allow WebSocket connections for events endpoint
+        if conn.url.path == "/api/events/in":
+            if "Authorization" in conn.headers:
+                auth = conn.headers["Authorization"]
+                if auth == apikey or auth == basic_auth:
+                    logger.debug("WebSocket authentication successful")
+                    return AuthCredentials(["auth"]), SimpleUser("websocket")
+            logger.debug("WebSocket authentication failed")
+            raise AuthenticationError("invalid token for WebSocket connection")
 
         if "Authorization" not in conn.headers:
             logger.debug("No Authorization header found")
