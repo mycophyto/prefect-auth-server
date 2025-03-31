@@ -10,6 +10,7 @@ services:
       - PREFECT_API_URL=${PREFECT_API_URL}
       - PREFECT_SERVER_API_HOST=0.0.0.0
       - PREFECT_SERVER_API_PORT=4200
+      - PREFECT_DEBUG_MODE=1
     ports:
       - "4200:4200"
     healthcheck:

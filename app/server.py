@@ -35,6 +35,8 @@ basic_auth = "Basic " + os.environ["PREFECT_BASIC_AUTH"]
 class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
         logger.info(f"Request path: {conn.url.path}")
+        logger.debug(f"Request headers: {dict(conn.headers)}")
+        logger.debug(f"Request method: {conn.method}")
 
         # Allow health check endpoint without authentication
         if conn.url.path == "/api/health":
@@ -43,12 +45,31 @@ class CustomAuth(AuthenticationBackend):
 
         # Allow WebSocket connections for events endpoint
         if conn.url.path == "/api/events/in":
+            logger.debug("WebSocket events endpoint accessed")
+
+            # Check for WebSocket upgrade request
+            if conn.headers.get("upgrade", "").lower() == "websocket":
+                logger.debug("WebSocket upgrade request detected")
+
             if "Authorization" in conn.headers:
                 auth = conn.headers["Authorization"]
-                if auth == apikey or auth == basic_auth:
+                logger.debug(f"WebSocket Authorization header: {auth}")
+
+                # Strip potential 'Bearer ' prefix from API key for comparison
+                if (
+                    auth.replace("Bearer ", "") == os.environ["PREFECT_API_KEY"]
+                    or auth == basic_auth
+                ):
                     logger.debug("WebSocket authentication successful")
                     return AuthCredentials(["auth"]), SimpleUser("websocket")
-            logger.debug("WebSocket authentication failed")
+                else:
+                    logger.debug(
+                        "WebSocket authentication failed - invalid credentials"
+                    )
+            else:
+                logger.debug(
+                    "WebSocket authentication failed - no Authorization header"
+                )
             raise AuthenticationError("invalid token for WebSocket connection")
 
         if "Authorization" not in conn.headers:
