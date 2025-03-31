@@ -43,6 +43,17 @@ class CustomAuth(AuthenticationBackend):
             logger.info("Health check endpoint accessed")
             return None
 
+        # Allow version check endpoint with authentication
+        if conn.url.path == "/api/admin/version":
+            logger.debug("Version check endpoint accessed")
+            if "Authorization" in conn.headers:
+                auth = conn.headers["Authorization"]
+                if auth == apikey or auth == basic_auth:
+                    logger.debug("Version check authentication successful")
+                    return AuthCredentials(["auth"]), SimpleUser("admin")
+            logger.debug("Version check authentication failed")
+            raise AuthenticationError("invalid token for version check")
+
         # Allow WebSocket connections for events endpoint
         if conn.url.path == "/api/events/in":
             logger.debug("WebSocket events endpoint accessed")
@@ -79,7 +90,7 @@ class CustomAuth(AuthenticationBackend):
         auth = conn.headers["Authorization"]
         logger.debug(f"Received Authorization header: {auth}")
 
-        # For API routes, accept both API key and Basic auth
+        # For API routes (including admin routes), accept both API key and Basic auth
         if conn.url.path.startswith("/api/"):
             logger.debug("API route detected - checking authentication")
             if auth == apikey:
