@@ -36,7 +36,7 @@ class CustomAuth(AuthenticationBackend):
     async def authenticate(self, conn: HTTPConnection):
         logger.info(f"Request path: {conn.url.path}")
         logger.debug(f"Request headers: {dict(conn.headers)}")
-        logger.debug(f"Request method: {conn.method}")
+        logger.debug(f"Request method: {conn.scope['method']}")
 
         # Allow health check endpoint without authentication
         if conn.url.path == "/api/health":
